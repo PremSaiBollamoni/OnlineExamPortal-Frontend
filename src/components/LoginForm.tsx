@@ -60,10 +60,12 @@ const LoginForm = ({ userType }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('Attempting login with:', { ...credentials, password: '[HIDDEN]' });
+      console.log('=== Login Attempt Start ===');
+      console.log('API URL:', import.meta.env.VITE_API_URL);
+      console.log('Login credentials:', { ...credentials, password: '[HIDDEN]' });
       
-      // Make direct API call with credentials
-      const response = await axios({
+      // Log the request configuration
+      const requestConfig = {
         method: 'post',
         url: `${import.meta.env.VITE_API_URL}/api/auth/login`,
         data: credentials,
@@ -72,6 +74,16 @@ const LoginForm = ({ userType }: LoginFormProps) => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
+      };
+      console.log('Request configuration:', requestConfig);
+
+      // Make direct API call with credentials
+      const response = await axios(requestConfig);
+
+      console.log('Login response:', {
+        status: response.status,
+        headers: response.headers,
+        data: response.data
       });
 
       const { user, token } = response.data;
@@ -84,6 +96,10 @@ const LoginForm = ({ userType }: LoginFormProps) => {
       // Store the token
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+
+      console.log('=== Login Success ===');
+      console.log('User role:', user.role);
+      console.log('Token stored:', token ? 'Yes' : 'No');
 
       toast({
         title: "Login Successful",
