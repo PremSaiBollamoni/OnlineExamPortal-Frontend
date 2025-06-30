@@ -3,13 +3,13 @@ import axios from 'axios';
 // Log the API URL for debugging
 console.log('API URL from env:', import.meta.env.VITE_API_URL);
 
+// Create axios instance with credentials
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest'
+    'Accept': 'application/json'
   }
 });
 
@@ -28,6 +28,12 @@ const processQueue = (error: any, token: string | null = null) => {
   
   failedQueue = [];
 };
+
+// Add request interceptor to ensure credentials are always included
+api.interceptors.request.use(function (config) {
+  config.withCredentials = true;
+  return config;
+});
 
 // Add a request interceptor to add the token
 api.interceptors.request.use(
