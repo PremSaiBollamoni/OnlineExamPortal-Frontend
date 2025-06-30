@@ -29,17 +29,19 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Add request interceptor to ensure credentials are always included
+// Add a request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Always include credentials
-    config.withCredentials = true;
-    
-    // Add token if available
+    // Get the token from localStorage
     const token = localStorage.getItem('token');
+    
+    // If token exists, add it to the headers
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Ensure credentials are always included
+    config.withCredentials = true;
     
     return config;
   },
@@ -48,67 +50,13 @@ api.interceptors.request.use(
   }
 );
 
-// Add a response interceptor to handle auth errors
+// Add a response interceptor
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        try {
-          const token = await new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-          });
-          originalRequest.headers['Authorization'] = `Bearer ${token}`;
-          return api(originalRequest);
-        } catch (err) {
-          return Promise.reject(err);
-        }
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        // Try to refresh the token
-        const response = await api.post('/api/auth/refresh');
-        const { token } = response.data;
-
-        // Update token in localStorage and axios headers
-        localStorage.setItem('token', token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        originalRequest.headers['Authorization'] = `Bearer ${token}`;
-
-        processQueue(null, token);
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        
-        // Clear auth data
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        delete api.defaults.headers.common['Authorization'];
-        
-        // Get current path and determine appropriate login page
-        const currentPath = window.location.pathname;
-        let loginPath = '/login';
-        if (currentPath.includes('/admin')) {
-          loginPath = '/admin/login';
-        } else if (currentPath.includes('/faculty')) {
-          loginPath = '/faculty/login';
-        }
-        
-        // Only redirect if not already on login page
-        if (!currentPath.includes('/login')) {
-          window.location.href = `${loginPath}?redirect=${encodeURIComponent(currentPath)}`;
-        }
-        
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
-    }
+  (response) => {
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', error);
     return Promise.reject(error);
   }
 );
