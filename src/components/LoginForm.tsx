@@ -63,17 +63,16 @@ const LoginForm = ({ userType }: LoginFormProps) => {
       console.log('Attempting login with:', { ...credentials, password: '[HIDDEN]' });
       
       // Make direct API call with credentials
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/login`,
-        credentials,
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
+      const response = await axios({
+        method: 'post',
+        url: `${import.meta.env.VITE_API_URL}/api/auth/login`,
+        data: credentials,
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
-      );
+      });
 
       const { user, token } = response.data;
       
