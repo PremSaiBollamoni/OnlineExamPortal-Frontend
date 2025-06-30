@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, GraduationCap, BookOpen, Shield } from 'lucide-react';
 import { useAuthContext } from '@/lib/auth-context';
+import axios from 'axios';
 
 interface LoginFormProps {
   userType: 'student' | 'faculty' | 'admin';
@@ -60,12 +61,30 @@ const LoginForm = ({ userType }: LoginFormProps) => {
 
     try {
       console.log('Attempting login with:', { ...credentials, password: '[HIDDEN]' });
-      const { user } = await login(credentials.email, credentials.password);
+      
+      // Make direct API call with credentials
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/login`,
+        credentials,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      const { user, token } = response.data;
       
       // Check if user role matches the expected role
       if (user.role !== userType) {
         throw new Error(`Invalid credentials for ${userType} login`);
       }
+
+      // Store the token
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
 
       toast({
         title: "Login Successful",
