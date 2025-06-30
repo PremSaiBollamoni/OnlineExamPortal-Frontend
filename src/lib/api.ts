@@ -30,18 +30,17 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 // Add request interceptor to ensure credentials are always included
-api.interceptors.request.use(function (config) {
-  config.withCredentials = true;
-  return config;
-});
-
-// Add a request interceptor to add the token
 api.interceptors.request.use(
   (config) => {
+    // Always include credentials
+    config.withCredentials = true;
+    
+    // Add token if available
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   },
   (error) => {
