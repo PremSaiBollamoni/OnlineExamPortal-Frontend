@@ -56,6 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(userData);
         setToken(storedToken);
+
+        // Set axios defaults
+        axios.defaults.withCredentials = true;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       } catch (error) {
         console.error('Error initializing auth:', error);
         localStorage.removeItem('token');
@@ -74,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (token) {
       // Set token in axios defaults
+      axios.defaults.withCredentials = true;
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem('token', token);
     } else {
@@ -104,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      // Ensure credentials are included for login request
       const response = await loginUser(email, password);
       const { user: userData, token: newToken } = response;
       
@@ -117,7 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('token', newToken);
 
-      // Set token in axios defaults
+      // Set axios defaults
+      axios.defaults.withCredentials = true;
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
       return response;
