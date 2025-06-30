@@ -1,9 +1,9 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 
 // Log the API URL for debugging
 console.log('API URL from env:', import.meta.env.VITE_API_URL);
 
-// Create axios instance with credentials
+// Create axios instance with base configuration
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
@@ -29,34 +29,35 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Add a request interceptor
+// Request interceptor
 api.interceptors.request.use(
-  (config) => {
-    // Get the token from localStorage
-    const token = localStorage.getItem('token');
-    
-    // If token exists, add it to the headers
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
+  (config: InternalAxiosRequestConfig) => {
     // Ensure credentials are always included
     config.withCredentials = true;
     
+    // Set headers
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.set('Authorization', `Bearer ${token}`);
+    }
+    config.headers.set('Content-Type', 'application/json');
+    config.headers.set('Accept', 'application/json');
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Add a response interceptor
+// Response interceptor
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error('API Error:', error);
+    console.error('API Error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers
+    });
     return Promise.reject(error);
   }
 );
