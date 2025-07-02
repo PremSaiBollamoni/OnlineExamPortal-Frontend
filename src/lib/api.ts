@@ -38,10 +38,10 @@ api.interceptors.request.use(
     // Set headers
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.set('Authorization', `Bearer ${token}`);
     }
-    config.headers['Content-Type'] = 'application/json';
-    config.headers['Accept'] ='application/json';
+    config.headers.set('Content-Type', 'application/json');
+    config.headers.set('Accept', 'application/json');
 
     return config;
   },
