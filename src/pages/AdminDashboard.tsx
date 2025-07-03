@@ -155,8 +155,51 @@ export default function AdminDashboard() {
 
   if (isLoadingPapers || isLoadingStats || isLoadingUsers || isLoadingActivities || isLoadingSubmissions) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-lg text-gray-600">Loading dashboard...</div>
+      <div className="space-y-6 p-4 md:p-6">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {[
+            { title: 'Total Users', icon: Users },
+            { title: 'Active Exams', icon: FileText },
+            { title: 'Completed Today', icon: CheckCircle },
+            { title: 'Pending Reviews', icon: Clock }
+          ].map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={index} className="overflow-hidden transition-all duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gray-50">
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <Icon className="h-4 w-4 text-gray-400" />
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="h-6 w-16 bg-gray-200 animate-pulse rounded"></div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Loading state for other sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <div className="h-6 w-48 bg-gray-200 animate-pulse rounded mb-2"></div>
+              <div className="h-4 w-32 bg-gray-100 animate-pulse rounded"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] bg-gray-50 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <div className="h-6 w-48 bg-gray-200 animate-pulse rounded mb-2"></div>
+              <div className="h-4 w-32 bg-gray-100 animate-pulse rounded"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] bg-gray-50 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
