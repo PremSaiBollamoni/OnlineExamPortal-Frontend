@@ -70,36 +70,22 @@ export const login = async (email: string, password: string) => {
     console.log('Login attempt for:', email);
     console.log('Using API URL:', import.meta.env.VITE_API_URL);
 
-    // Make the login request using fetch
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ email, password }),
-      credentials: 'include'
-    });
-
+    // Make the login request using the configured axios instance
+    const response = await api.post('/api/auth/login', { email, password });
     console.log('Response status:', response.status);
-    const data = await response.json();
-    console.log('Response data:', data);
-
-    if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
-    }
+    console.log('Response data:', response.data);
 
     // Extract and validate user data
-    const userData = data.user || data;
-    const token = data.token;
+    const userData = response.data.user || response.data;
+    const token = response.data.token;
 
     if (!userData || !userData._id || !userData.role) {
-      console.error('Invalid user data in response:', data);
+      console.error('Invalid user data in response:', response.data);
       throw new Error('Invalid user data in response');
     }
 
     if (!token) {
-      console.error('No token in response:', data);
+      console.error('No token in response:', response.data);
       throw new Error('No token in response');
     }
 
