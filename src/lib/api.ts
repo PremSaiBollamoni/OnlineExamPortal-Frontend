@@ -78,13 +78,30 @@ api.interceptors.response.use(
 
 // Auth APIs
 export const login = async (email: string, password: string) => {
+  console.log('=== Login Request Start ===');
+  console.log('Login credentials:', { email, password: '[HIDDEN]' });
+  console.log('Request configuration:', {
+    method: 'post',
+    url: `${import.meta.env.VITE_API_URL}/api/auth/login`,
+    data: { email, password },
+    withCredentials: true,
+    headers: api.defaults.headers
+  });
+
   const response = await api.post('/api/auth/login', { email, password });
+  console.log('Login response:', response);
+
+  if (!response.data || !response.data.user || !response.data.token) {
+    console.error('Invalid login response structure:', response.data);
+    throw new Error('Invalid login response structure');
+  }
+
   const { token, user } = response.data;
   
   // Set token in axios defaults
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   
-  return response.data;
+  return { user, token };
 };
 
 // These are aliases that use the same endpoint but will be validated by role in the frontend
