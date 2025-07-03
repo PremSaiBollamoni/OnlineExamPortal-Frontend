@@ -5,13 +5,21 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
+  const apiUrl = process.env.VITE_API_URL || 'https://onlineexamportal-backend.onrender.com';
   console.log('Build Mode:', mode);
-  console.log('API URL:', process.env.VITE_API_URL);
+  console.log('API URL:', apiUrl);
   
   return {
     server: {
       host: "::",
       port: 8080,
+      proxy: mode === 'development' ? {
+        '/api': {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: false,
+        }
+      } : undefined
     },
     plugins: [
       react(),
@@ -24,7 +32,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL),
+      'process.env.VITE_API_URL': JSON.stringify(apiUrl),
     },
   };
 });
