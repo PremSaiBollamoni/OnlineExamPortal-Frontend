@@ -109,12 +109,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('=== Login Attempt Start ===');
+      console.log('Email:', email);
+      console.log('API URL:', import.meta.env.VITE_API_URL);
+      
       // Ensure credentials are included for login request
       const response = await loginUser(email, password);
+      console.log('=== Login Response ===', response);
+      
       const { user: userData, token: newToken } = response;
       
       // Validate received data before storing
       if (!userData._id || !userData.role || !newToken) {
+        console.error('Invalid login response:', response);
         throw new Error('Invalid login response');
       }
 
@@ -126,9 +133,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set axios defaults
       axios.defaults.withCredentials = true;
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      
+      console.log('=== Login Success ===');
+      console.log('User:', userData);
+      console.log('Token:', newToken);
 
       return response;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('=== Login Error ===');
+      console.error('Error:', error);
+      console.error('Response:', error.response?.data);
+      console.error('Status:', error.response?.status);
+      
       // Clear any partial data on error
       localStorage.removeItem('token');
       localStorage.removeItem('user');
