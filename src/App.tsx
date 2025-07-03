@@ -1,10 +1,11 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./lib/auth-context";
 import { SocketProvider } from "@/lib/socket-context";
+import { queryClient } from "./lib/api";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import FacultyLogin from "./pages/FacultyLogin";
@@ -31,15 +32,6 @@ import EvaluatedSubmissions from "./pages/EvaluatedSubmissions";
 import ProtectedRoute from './components/ProtectedRoute';
 import Analytics from './pages/Analytics';
 import SubmissionDetails from './pages/SubmissionDetails';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
