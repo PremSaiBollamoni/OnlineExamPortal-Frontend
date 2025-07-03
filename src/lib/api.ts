@@ -89,39 +89,22 @@ export const login = async (email: string, password: string) => {
   });
 
   const response = await api.post('/api/auth/login', { email, password });
-  console.log('Login response data structure:', {
-    fullResponse: response,
-    dataOnly: response.data,
-    hasUser: response.data?.user ? 'yes' : 'no',
-    hasToken: response.data?.token ? 'yes' : 'no',
-    dataKeys: Object.keys(response.data || {}),
-    userObject: response.data?.user,
-    tokenValue: response.data?.token
-  });
+  console.log('Login response data:', response.data);
 
-  if (!response.data) {
-    console.error('No data in response');
-    throw new Error('Invalid login response - no data');
-  }
+  const { token, _id, email: userEmail, name, role, ...otherUserData } = response.data;
 
-  // Try to handle different response structures
-  let userData = response.data.user;
-  let token = response.data.token;
-
-  // If the data itself is the user object
-  if (response.data._id && response.data.email && !userData) {
-    userData = response.data;
-    token = response.data.token || response.headers?.authorization?.replace('Bearer ', '');
-  }
-
-  if (!userData || !token) {
-    console.error('Invalid login response structure:', {
-      responseData: response.data,
-      extractedUser: userData,
-      extractedToken: token
-    });
+  if (!_id || !role || !token) {
+    console.error('Invalid login response structure:', response.data);
     throw new Error('Invalid login response structure');
   }
+
+  const userData = {
+    _id,
+    email: userEmail,
+    name,
+    role,
+    ...otherUserData
+  };
 
   // Set token in axios defaults
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
