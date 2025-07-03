@@ -79,56 +79,65 @@ api.interceptors.response.use(
 export const login = async (email: string, password: string) => {
   try {
     console.log('=== Login Request Start ===');
-    console.log('Login credentials:', { email, password: '[HIDDEN]' });
+    console.log('Login attempt for:', email);
 
+    // First try with fetch
     const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://onlineexamportal-backend.onrender.com'}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Origin': window.location.origin
+        'Accept': 'application/json'
       },
       body: JSON.stringify({ email, password }),
       credentials: 'include',
       mode: 'cors'
     });
 
+    console.log('Response status:', response.status);
+    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('Login response data:', data);
+    console.log('Raw response data:', data);
 
-    // Handle both possible response structures
-    let userData, token;
-
-    if (data.user && data.token) {
-      // Response has nested user object
-      userData = data.user;
-      token = data.token;
-    } else if (data._id && data.token) {
-      // Response has flat structure
-      const { token: authToken, ...userFields } = data;
-      userData = userFields;
-      token = authToken;
-    } else {
-      console.error('Unexpected response structure:', data);
-      throw new Error('Invalid response structure');
+    // If data is directly the response we want
+    if (data && data._id && typeof data.role === 'string' && data.token) {
+      const { token, ...userData } = data;
+      console.log('Extracted user data:', userData);
+      console.log('Token present:', !!token);
+      return { user: userData, token };
     }
-
-    // Validate the extracted data
-    if (!userData._id || typeof userData.role !== 'string') {
-      console.error('Invalid user data structure:', userData);
-      throw new Error('Invalid user data structure');
-    }
-
-    // Set token in axios defaults for future requests
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
-    return { user: userData, token };
+    // If data has nested user object
+    if (data && data.user && data.token) {
+      console.log('Nested user data:', data.user);
+      console.log('Token present:', !!data.token);
+      return { user: data.user, token: data.token };
+    }
+
+    // If neither format matches, try axios as fallback
+    console.log('Fetch attempt failed, trying axios...');
+    const axiosResponse = await api.post('/api/auth/login', { email, password });
+    console.log('Axios response:', axiosResponse.data);
+
+    if (axiosResponse.data && axiosResponse.data._id && typeof axiosResponse.data.role === 'string') {
+      const { token, ...userData } = axiosResponse.data;
+      return { user: userData, token };
+    }
+
+    throw new Error('Invalid response format from both fetch and axios attempts');
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('=== Login Error ===');
+    console.error('Error details:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+    }
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    }
     throw error;
   }
 };
