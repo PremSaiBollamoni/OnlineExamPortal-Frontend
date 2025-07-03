@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, GraduationCap, BookOpen, Shield } from 'lucide-react';
 import { useAuthContext } from '@/lib/auth-context';
-import axios from 'axios';
 
 interface LoginFormProps {
   userType: 'student' | 'faculty' | 'admin';
@@ -60,46 +59,8 @@ const LoginForm = ({ userType }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('=== Login Attempt Start ===');
-      console.log('API URL:', import.meta.env.VITE_API_URL);
-      console.log('Login credentials:', { ...credentials, password: '[HIDDEN]' });
-      
-      // Log the request configuration
-      const requestConfig = {
-        method: 'post',
-        url: `${import.meta.env.VITE_API_URL}/api/auth/login`,
-        data: credentials,
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      };
-      console.log('Request configuration:', requestConfig);
-
-      // Make direct API call with credentials
-      const response = await axios(requestConfig);
-
-      console.log('Login response:', {
-        status: response.status,
-        headers: response.headers,
-        data: response.data
-      });
-
-      const { user, token } = response.data;
-      
-      // Check if user role matches the expected role
-      if (user.role !== userType) {
-        throw new Error(`Invalid credentials for ${userType} login`);
-      }
-
-      // Store the token
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      console.log('=== Login Success ===');
-      console.log('User role:', user.role);
-      console.log('Token stored:', token ? 'Yes' : 'No');
+      // Use the auth context's login function instead of making a direct API call
+      await login(credentials.email, credentials.password);
 
       toast({
         title: "Login Successful",
@@ -110,7 +71,7 @@ const LoginForm = ({ userType }: LoginFormProps) => {
       const from = location.state?.from || '/';
       
       // Route based on user type
-      switch(user.role) {
+      switch(userType) {
         case 'student':
           navigate('/dashboard');
           break;
