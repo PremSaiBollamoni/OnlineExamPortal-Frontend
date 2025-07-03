@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import { QueryClient } from '@tanstack/react-query';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -63,6 +64,18 @@ api.interceptors.response.use(
   }
 );
 
+// Add caching configuration at the top after axios import
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // Data is fresh for 5 minutes
+      gcTime: 1000 * 60 * 30, // Cache persists for 30 minutes (renamed from cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      retry: 1, // Only retry failed requests once
+    },
+  },
+});
+
 // Auth APIs
 export const login = async (email: string, password: string) => {
   try {
@@ -124,7 +137,11 @@ export const getMe = () =>
 
 // User APIs
 export const getUsers = () => 
-  api.get('/api/users').then(res => res.data);
+  api.get('/api/users', {
+    headers: {
+      'Cache-Control': 'max-age=300', // Cache for 5 minutes
+    }
+  }).then(res => res.data);
 
 export const getFacultyUsers = async () => {
   const response = await api.get('/api/users?role=faculty');
@@ -175,7 +192,11 @@ export const bulkDeleteUsers = async (userIds: string[]) => {
 
 // Subject APIs
 export const getSubjects = () => 
-  api.get('/api/subjects').then(res => res.data);
+  api.get('/api/subjects', {
+    headers: {
+      'Cache-Control': 'max-age=300', // Cache for 5 minutes
+    }
+  }).then(res => res.data);
 
 export const createSubject = (data: any) => 
   api.post('/api/subjects', data).then(res => res.data);
@@ -190,7 +211,12 @@ export const deleteSubject = (id: string) =>
 export const getPapers = () => 
   api.get('/api/exam-papers').then(res => res.data);
 
-export const getExamPapers = getPapers;
+export const getExamPapers = () => 
+  api.get('/api/exam-papers', {
+    headers: {
+      'Cache-Control': 'max-age=60', // Cache for 1 minute since this data changes more frequently
+    }
+  }).then(res => res.data);
 
 export const getPaper = (id: string) => 
   api.get(`/api/exam-papers/${id}`).then(res => res.data);
@@ -219,7 +245,11 @@ export const rejectExamPaper = (id: string, reason: string) =>
 
 // Submission APIs
 export const getSubmissions = () => 
-  api.get('/api/submissions').then(res => res.data);
+  api.get('/api/submissions', {
+    headers: {
+      'Cache-Control': 'max-age=60', // Cache for 1 minute since this data changes more frequently
+    }
+  }).then(res => res.data);
 
 export const getSubmission = (id: string) => 
   api.get(`/api/submissions/${id}`).then(res => res.data);
@@ -260,6 +290,23 @@ export const updateResult = async (id: string, data: any) => {
 
 // Activities
 export const getActivities = () => 
-  api.get('/api/activities').then(res => res.data);
+  api.get('/api/activities', {
+    headers: {
+      'Cache-Control': 'max-age=60', // Cache for 1 minute since this data changes frequently
+    }
+  }).then(res => res.data);
+
+// Add a function to prefetch common data
+export const prefetchDashboardData = async () => {
+  const promises = [
+    queryClient.prefetchQuery({ queryKey: ['users'], queryFn: getUsers }),
+    queryClient.prefetchQuery({ queryKey: ['subjects'], queryFn: getSubjects }),
+    queryClient.prefetchQuery({ queryKey: ['examPapers'], queryFn: getExamPapers }),
+    queryClient.prefetchQuery({ queryKey: ['submissions'], queryFn: getSubmissions }),
+    queryClient.prefetchQuery({ queryKey: ['activities'], queryFn: getActivities }),
+  ];
+  
+  await Promise.allSettled(promises);
+};
 
 export default api; 
