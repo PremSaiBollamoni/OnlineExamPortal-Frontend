@@ -38,8 +38,6 @@ const Exams = () => {
 
   // Filter active exams and check if they're already completed by the student
   const availableExams = examPapers?.filter((exam: any) => {
-    if (!exam.isActive) return false;
-
     // Check if student has already submitted this exam
     const hasSubmitted = submissions?.some((sub: any) => 
       sub.examPaper._id === exam._id && 
@@ -47,7 +45,8 @@ const Exams = () => {
       sub.isSubmitted
     );
 
-    return !hasSubmitted;
+    // Show exam if it's approved and not submitted
+    return exam.status === 'approved' && !hasSubmitted;
   }) || [];
 
   const handleStartExam = (examId: string) => {
