@@ -117,12 +117,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await loginUser(email, password);
       console.log('=== Login Response ===', response);
       
-      const { user: userData, token: newToken } = response;
-      
+      // Extract user and token from response data
+      const { data } = response;
+      if (!data) {
+        console.error('No data in login response');
+        throw new Error('Invalid login response - no data');
+      }
+
+      const userData = data.user;
+      const newToken = data.token;
+
       // Validate received data before storing
-      if (!userData._id || !userData.role || !newToken) {
-        console.error('Invalid login response:', response);
-        throw new Error('Invalid login response');
+      if (!userData || !userData._id || !userData.role || !newToken) {
+        console.error('Invalid login response data:', data);
+        throw new Error('Invalid login response data structure');
       }
 
       setUser(userData);
@@ -138,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('User:', userData);
       console.log('Token:', newToken);
 
-      return response;
+      return { user: userData, token: newToken };
     } catch (error: any) {
       console.error('=== Login Error ===');
       console.error('Error:', error);
