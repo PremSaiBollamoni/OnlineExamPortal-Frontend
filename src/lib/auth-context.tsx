@@ -115,21 +115,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Ensure credentials are included for login request
       const response = await loginUser(email, password);
-      console.log('=== Login Response ===', response);
+      console.log('=== Login Response ===');
+      console.log('Full response:', response);
       
-      // Extract user and token from response data
-      const { data } = response;
-      if (!data) {
-        console.error('No data in login response');
-        throw new Error('Invalid login response - no data');
-      }
-
-      const userData = data.user;
-      const newToken = data.token;
+      const { user: userData, token: newToken } = response;
+      
+      console.log('Extracted data:', {
+        userData,
+        hasToken: !!newToken,
+        userKeys: userData ? Object.keys(userData) : [],
+      });
 
       // Validate received data before storing
-      if (!userData || !userData._id || !userData.role || !newToken) {
-        console.error('Invalid login response data:', data);
+      if (!userData || !userData._id || typeof userData.role !== 'string' || !newToken) {
+        console.error('Invalid login response data:', {
+          hasUser: !!userData,
+          userId: userData?._id,
+          userRole: userData?.role,
+          hasToken: !!newToken
+        });
         throw new Error('Invalid login response data structure');
       }
 
@@ -150,8 +154,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('=== Login Error ===');
       console.error('Error:', error);
-      console.error('Response:', error.response?.data);
-      console.error('Status:', error.response?.status);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Request made but no response received');
+        console.error('Request:', error.request);
+      } else {
+        console.error('Error details:', error.message);
+      }
       
       // Clear any partial data on error
       localStorage.removeItem('token');
