@@ -5,7 +5,7 @@ import { useAuthContext } from '@/lib/auth-context';
 import { Button } from './ui/button';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { prefetchDashboardData } from '@/lib/api';
+import { prefetchDashboardData, queryClient } from '@/lib/api';
 
 const DashboardLayout = () => {
   const { user } = useAuthContext();
@@ -13,7 +13,9 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     if (user) {
-      // Prefetch dashboard data when component mounts and user is authenticated
+      // Clear any stale data when user changes
+      queryClient.clear();
+      // Prefetch fresh data
       prefetchDashboardData();
     }
   }, [user]);
