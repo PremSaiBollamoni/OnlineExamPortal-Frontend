@@ -1,46 +1,63 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useAuthContext } from './auth-context';
 
 interface SocketContextType {
   socket: Socket | null;
-  activities: any[];
+  isConnected: boolean;
 }
 
-const SocketContext = createContext<SocketContextType>({
-  socket: null,
-  activities: []
-});
+const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-export const useSocket = () => useContext(SocketContext);
-
-export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [activities, setActivities] = useState<any[]>([]);
-  const { user } = useAuthContext();
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      // Connect to socket server
-      const socketInstance = io('http://localhost:5000');
+    // Create socket connection
+    const socketInstance = io(import.meta.env.VITE_API_URL, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
 
-      // Listen for new activities
-      socketInstance.on('newActivity', (activity) => {
-        setActivities((prev) => [activity, ...prev].slice(0, 10));
-      });
+    // Socket event handlers
+    socketInstance.on('connect', () => {
+      console.log('Socket connected');
+      setIsConnected(true);
+    });
 
-      setSocket(socketInstance);
+    socketInstance.on('disconnect', () => {
+      console.log('Socket disconnected');
+      setIsConnected(false);
+    });
 
-      // Cleanup on unmount
-      return () => {
-        socketInstance.disconnect();
-      };
-    }
-  }, [user]);
+    socketInstance.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      setIsConnected(false);
+    });
+
+    setSocket(socketInstance);
+
+    // Cleanup on unmount
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, []);
 
   return (
-    <SocketContext.Provider value={{ socket, activities }}>
+    <SocketContext.Provider value={{ socket, isConnected }}>
       {children}
     </SocketContext.Provider>
   );
-}; 
+}
+
+export function useSocket() {
+  const context = useContext(SocketContext);
+  if (context === undefined) {
+    throw new Error('useSocket must be used within a SocketProvider');
+  }
+  return context;
+} 
