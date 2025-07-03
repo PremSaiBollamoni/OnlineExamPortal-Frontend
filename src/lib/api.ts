@@ -1,11 +1,8 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 
-// Log the API URL for debugging
-console.log('API URL from env:', import.meta.env.VITE_API_URL);
-
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://onlineexamportal-backend.onrender.com',
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -32,12 +29,12 @@ const processQueue = (error: any, token: string | null = null) => {
 // Request interceptor
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Log request for debugging
-    console.log('=== API Request Start ===');
-    console.log('URL:', config.url);
-    console.log('Method:', config.method);
-    console.log('Headers:', config.headers);
-    console.log('=== API Request End ===');
+    // Log the request for debugging
+    console.log('=== API Request ===', {
+      url: config.url,
+      method: config.method,
+      withCredentials: config.withCredentials
+    });
 
     // Ensure credentials are always included
     config.withCredentials = true;
@@ -47,8 +44,6 @@ api.interceptors.request.use(
     if (token) {
       config.headers.set('Authorization', `Bearer ${token}`);
     }
-    config.headers.set('Content-Type', 'application/json');
-    config.headers.set('Accept', 'application/json');
 
     return config;
   },
@@ -57,20 +52,13 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => {
-    console.log('=== API Response Success ===');
-    console.log('Status:', response.status);
-    console.log('Data:', response.data);
-    console.log('=== API Response End ===');
-    return response;
-  },
-  (error) => {
-    console.error('=== API Error Start ===');
-    console.error('Error Message:', error.message);
-    console.error('Response Data:', error.response?.data);
-    console.error('Status:', error.response?.status);
-    console.error('Headers:', error.response?.headers);
-    console.error('=== API Error End ===');
+  (response) => response,
+  async (error) => {
+    console.error('API Error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     return Promise.reject(error);
   }
 );
@@ -80,64 +68,48 @@ export const login = async (email: string, password: string) => {
   try {
     console.log('=== Login Request Start ===');
     console.log('Login attempt for:', email);
+    console.log('Using API URL:', import.meta.env.VITE_API_URL);
 
-    // First try with fetch
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://onlineexamportal-backend.onrender.com'}/api/auth/login`, {
+    // Make the login request using fetch
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       body: JSON.stringify({ email, password }),
-      credentials: 'include',
-      mode: 'cors'
+      credentials: 'include'
     });
 
     console.log('Response status:', response.status);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
     const data = await response.json();
-    console.log('Raw response data:', data);
+    console.log('Response data:', data);
 
-    // If data is directly the response we want
-    if (data && data._id && typeof data.role === 'string' && data.token) {
-      const { token, ...userData } = data;
-      console.log('Extracted user data:', userData);
-      console.log('Token present:', !!token);
-      return { user: userData, token };
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
+
+    // Extract and validate user data
+    const userData = data.user || data;
+    const token = data.token;
+
+    if (!userData || !userData._id || !userData.role) {
+      console.error('Invalid user data in response:', data);
+      throw new Error('Invalid user data in response');
+    }
+
+    if (!token) {
+      console.error('No token in response:', data);
+      throw new Error('No token in response');
+    }
+
+    // Set token for future requests
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
-    // If data has nested user object
-    if (data && data.user && data.token) {
-      console.log('Nested user data:', data.user);
-      console.log('Token present:', !!data.token);
-      return { user: data.user, token: data.token };
-    }
-
-    // If neither format matches, try axios as fallback
-    console.log('Fetch attempt failed, trying axios...');
-    const axiosResponse = await api.post('/api/auth/login', { email, password });
-    console.log('Axios response:', axiosResponse.data);
-
-    if (axiosResponse.data && axiosResponse.data._id && typeof axiosResponse.data.role === 'string') {
-      const { token, ...userData } = axiosResponse.data;
-      return { user: userData, token };
-    }
-
-    throw new Error('Invalid response format from both fetch and axios attempts');
+    return { user: userData, token };
   } catch (error) {
     console.error('=== Login Error ===');
     console.error('Error details:', error);
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-    }
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-    }
     throw error;
   }
 };
@@ -148,18 +120,16 @@ export const facultyLogin = login;
 
 export const logout = async () => {
   try {
-    const response = await api.post('/api/auth/logout');
-    // Clear auth headers and storage
-    delete api.defaults.headers.common['Authorization'];
+    await api.post('/api/auth/logout');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    return response.data;
+    delete api.defaults.headers.common['Authorization'];
   } catch (error) {
-    // Clear auth headers even if logout fails
-    delete api.defaults.headers.common['Authorization'];
+    console.error('Logout error:', error);
+    // Still clear local data even if logout fails
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    throw error;
+    delete api.defaults.headers.common['Authorization'];
   }
 };
 
