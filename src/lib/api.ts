@@ -58,7 +58,6 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    // Log successful response for debugging
     console.log('=== API Response Success ===');
     console.log('Status:', response.status);
     console.log('Data:', response.data);
@@ -78,38 +77,56 @@ api.interceptors.response.use(
 
 // Auth APIs
 export const login = async (email: string, password: string) => {
-  console.log('=== Login Request Start ===');
-  console.log('Login credentials:', { email, password: '[HIDDEN]' });
-  console.log('Request configuration:', {
-    method: 'post',
-    url: `${import.meta.env.VITE_API_URL}/api/auth/login`,
-    data: { email, password },
-    withCredentials: true,
-    headers: api.defaults.headers
-  });
+  try {
+    console.log('=== Login Request Start ===');
+    console.log('Login credentials:', { email, password: '[HIDDEN]' });
 
-  const response = await api.post('/api/auth/login', { email, password });
-  console.log('Login response data:', response.data);
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://onlineexamportal-backend.onrender.com'}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ email, password }),
+      credentials: 'include',
+      mode: 'cors'
+    });
 
-  const { token, _id, email: userEmail, name, role, ...otherUserData } = response.data;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-  if (!_id || !role || !token) {
-    console.error('Invalid login response structure:', response.data);
-    throw new Error('Invalid login response structure');
+    const data = await response.json();
+    console.log('Login response data:', data);
+
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format');
+    }
+
+    // Extract user data and token
+    const { token, _id, email: userEmail, name, role, ...otherUserData } = data;
+
+    if (!_id || !role || !token) {
+      console.error('Missing required fields in response:', data);
+      throw new Error('Invalid response structure - missing required fields');
+    }
+
+    const userData = {
+      _id,
+      email: userEmail,
+      name,
+      role,
+      ...otherUserData
+    };
+
+    // Set token in axios defaults for future requests
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    return { user: userData, token };
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
   }
-
-  const userData = {
-    _id,
-    email: userEmail,
-    name,
-    role,
-    ...otherUserData
-  };
-
-  // Set token in axios defaults
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  
-  return { user: userData, token };
 };
 
 // These are aliases that use the same endpoint but will be validated by role in the frontend
