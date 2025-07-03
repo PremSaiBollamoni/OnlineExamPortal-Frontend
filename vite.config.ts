@@ -13,13 +13,22 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "::",
       port: 8080,
-      proxy: mode === 'development' ? {
+      proxy: {
         '/api': {
           target: apiUrl,
           changeOrigin: true,
           secure: false,
+          configure: (proxy, _options) => {
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              // Ensure credentials are included
+              proxyReq.setHeader('Access-Control-Allow-Credentials', 'true');
+              if (req.headers.cookie) {
+                proxyReq.setHeader('Cookie', req.headers.cookie);
+              }
+            });
+          }
         }
-      } : undefined
+      }
     },
     plugins: [
       react(),
