@@ -5,7 +5,7 @@ console.log('API URL from env:', import.meta.env.VITE_API_URL);
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'https://onlineexamportal-backend.onrender.com',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -32,6 +32,13 @@ const processQueue = (error: any, token: string | null = null) => {
 // Request interceptor
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Log request for debugging
+    console.log('=== API Request Start ===');
+    console.log('URL:', config.url);
+    console.log('Method:', config.method);
+    console.log('Headers:', config.headers);
+    console.log('=== API Request End ===');
+
     // Ensure credentials are always included
     config.withCredentials = true;
     
@@ -50,14 +57,21 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log successful response for debugging
+    console.log('=== API Response Success ===');
+    console.log('Status:', response.status);
+    console.log('Data:', response.data);
+    console.log('=== API Response End ===');
+    return response;
+  },
   (error) => {
-    console.error('API Error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
+    console.error('=== API Error Start ===');
+    console.error('Error Message:', error.message);
+    console.error('Response Data:', error.response?.data);
+    console.error('Status:', error.response?.status);
+    console.error('Headers:', error.response?.headers);
+    console.error('=== API Error End ===');
     return Promise.reject(error);
   }
 );
