@@ -165,11 +165,76 @@ const FacultyDashboard = () => {
 
   if (isLoadingSubjects || isLoadingExams || isLoadingSubmissions) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Faculty Dashboard</h1>
+            <p className="text-gray-600 mt-1">Welcome back, {user?.name}</p>
+          </div>
+          <Button
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 w-full sm:w-auto opacity-50"
+            disabled
+          >
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            View Pending Evaluations
+          </Button>
         </div>
+
+        {/* Stats Overview Loading State */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { title: 'My Subjects', icon: GraduationCap },
+            { title: 'Created Papers', icon: BookOpen },
+            { title: 'Active Exams', icon: Clock },
+            { title: 'Pending Evaluations', icon: ClipboardCheck }
+          ].map((stat, index) => (
+            <Card key={index} className="bg-gradient-to-br from-purple-50 to-indigo-50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-4 sm:p-6">
+                <CardTitle className="text-sm font-medium truncate">{stat.title}</CardTitle>
+                {React.createElement(stat.icon, { className: "h-4 w-4 text-purple-400 flex-shrink-0" })}
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="h-8 w-16 bg-purple-100 animate-pulse rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* My Subjects Section Loading State */}
+        <Card>
+          <CardHeader className="space-y-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle>My Subjects</CardTitle>
+                <CardDescription>Subjects assigned to you</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((_, index) => (
+                <Card key={index} className="bg-white">
+                  <CardHeader className="p-4 sm:p-6">
+                    <div className="flex flex-col gap-2">
+                      <div className="h-6 w-3/4 bg-gray-200 animate-pulse rounded"></div>
+                      <div className="h-4 w-1/4 bg-gray-100 animate-pulse rounded"></div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3].map((_, i) => (
+                          <div key={i} className="h-6 w-20 bg-gray-100 animate-pulse rounded"></div>
+                        ))}
+                      </div>
+                      <div className="h-8 w-full bg-gray-50 animate-pulse rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
