@@ -122,25 +122,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         expectedRole = 'faculty';
       }
 
-      // Ensure credentials are included for login request
-      const { user: userData, token: newToken } = await loginUser(email, password);
+      console.log('Expected role:', expectedRole);
+
+      // Attempt login
+      const response = await loginUser(email, password);
       
       console.log('=== Login Response Processing ===');
-      console.log('User data:', userData);
-      console.log('Has token:', !!newToken);
+      console.log('Response:', response);
 
-      // Validate received data before storing
-      if (!userData || !userData._id || !userData.role || !newToken) {
-        console.error('Invalid login response data:', {
-          hasUser: !!userData,
-          userId: userData?._id,
-          userRole: userData?.role,
-          hasToken: !!newToken
-        });
-        throw new Error('Invalid login response data structure');
+      if (!response || !response.user || !response.token) {
+        console.error('Invalid login response:', response);
+        throw new Error('Invalid login response structure');
+      }
+
+      const { user: userData, token: newToken } = response;
+
+      // Validate user data
+      if (!userData || !userData._id || typeof userData.role !== 'string') {
+        console.error('Invalid user data:', userData);
+        throw new Error('Invalid user data structure');
       }
 
       // Validate user role
+      console.log('Role validation:', {
+        expected: expectedRole,
+        received: userData.role
+      });
+
       if (userData.role !== expectedRole) {
         console.error('Role mismatch:', {
           expected: expectedRole,
@@ -149,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(`Invalid credentials for ${expectedRole} login`);
       }
 
+      // Store user data and token
       setUser(userData);
       setToken(newToken);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -160,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('=== Login Success ===');
       console.log('User:', userData);
-      console.log('Token:', newToken);
+      console.log('Token stored:', !!newToken);
 
       return { user: userData, token: newToken };
     } catch (error: any) {
