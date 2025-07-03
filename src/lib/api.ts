@@ -85,7 +85,8 @@ export const login = async (email: string, password: string) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Origin': window.location.origin
       },
       body: JSON.stringify({ email, password }),
       credentials: 'include',
@@ -99,25 +100,28 @@ export const login = async (email: string, password: string) => {
     const data = await response.json();
     console.log('Login response data:', data);
 
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format');
+    // Handle both possible response structures
+    let userData, token;
+
+    if (data.user && data.token) {
+      // Response has nested user object
+      userData = data.user;
+      token = data.token;
+    } else if (data._id && data.token) {
+      // Response has flat structure
+      const { token: authToken, ...userFields } = data;
+      userData = userFields;
+      token = authToken;
+    } else {
+      console.error('Unexpected response structure:', data);
+      throw new Error('Invalid response structure');
     }
 
-    // Extract user data and token
-    const { token, _id, email: userEmail, name, role, ...otherUserData } = data;
-
-    if (!_id || !role || !token) {
-      console.error('Missing required fields in response:', data);
-      throw new Error('Invalid response structure - missing required fields');
+    // Validate the extracted data
+    if (!userData._id || typeof userData.role !== 'string') {
+      console.error('Invalid user data structure:', userData);
+      throw new Error('Invalid user data structure');
     }
-
-    const userData = {
-      _id,
-      email: userEmail,
-      name,
-      role,
-      ...otherUserData
-    };
 
     // Set token in axios defaults for future requests
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
