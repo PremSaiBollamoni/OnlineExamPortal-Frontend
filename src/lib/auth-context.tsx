@@ -116,18 +116,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ensure credentials are included for login request
       const response = await loginUser(email, password);
       console.log('=== Login Response ===');
-      console.log('Full response:', response);
+      console.log('Response data:', response);
       
       const { user: userData, token: newToken } = response;
       
-      console.log('Extracted data:', {
-        userData,
-        hasToken: !!newToken,
-        userKeys: userData ? Object.keys(userData) : [],
-      });
-
       // Validate received data before storing
-      if (!userData || !userData._id || typeof userData.role !== 'string' || !newToken) {
+      if (!userData || !userData._id || !userData.role || !newToken) {
         console.error('Invalid login response data:', {
           hasUser: !!userData,
           userId: userData?._id,
@@ -135,6 +129,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           hasToken: !!newToken
         });
         throw new Error('Invalid login response data structure');
+      }
+
+      // For admin/faculty login, verify the role matches
+      const currentPath = window.location.pathname;
+      let expectedRole = 'student';
+      
+      if (currentPath.includes('/admin')) {
+        expectedRole = 'admin';
+      } else if (currentPath.includes('/faculty')) {
+        expectedRole = 'faculty';
+      }
+
+      if (userData.role !== expectedRole) {
+        throw new Error(`Invalid credentials for ${expectedRole} login`);
       }
 
       setUser(userData);
