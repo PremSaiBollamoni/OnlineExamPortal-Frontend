@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuthContext } from '@/lib/auth-context';
 import { Button } from './ui/button';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { prefetchDashboardData } from '@/lib/api';
 
 const DashboardLayout = () => {
   const { user } = useAuthContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      // Prefetch dashboard data when component mounts and user is authenticated
+      prefetchDashboardData();
+    }
+  }, [user]);
 
   if (!user) {
     return null; // Don't render anything if user is not authenticated
