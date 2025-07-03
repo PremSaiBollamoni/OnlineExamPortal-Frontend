@@ -111,15 +111,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('=== Login Attempt Start ===');
       console.log('Email:', email);
-      console.log('API URL:', import.meta.env.VITE_API_URL);
       
+      // Get the expected role based on the current path
+      const currentPath = window.location.pathname;
+      let expectedRole = 'student';
+      
+      if (currentPath.includes('/admin')) {
+        expectedRole = 'admin';
+      } else if (currentPath.includes('/faculty')) {
+        expectedRole = 'faculty';
+      }
+
       // Ensure credentials are included for login request
-      const response = await loginUser(email, password);
-      console.log('=== Login Response ===');
-      console.log('Response data:', response);
+      const { user: userData, token: newToken } = await loginUser(email, password);
       
-      const { user: userData, token: newToken } = response;
-      
+      console.log('=== Login Response Processing ===');
+      console.log('User data:', userData);
+      console.log('Has token:', !!newToken);
+
       // Validate received data before storing
       if (!userData || !userData._id || !userData.role || !newToken) {
         console.error('Invalid login response data:', {
@@ -131,17 +140,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Invalid login response data structure');
       }
 
-      // For admin/faculty login, verify the role matches
-      const currentPath = window.location.pathname;
-      let expectedRole = 'student';
-      
-      if (currentPath.includes('/admin')) {
-        expectedRole = 'admin';
-      } else if (currentPath.includes('/faculty')) {
-        expectedRole = 'faculty';
-      }
-
+      // Validate user role
       if (userData.role !== expectedRole) {
+        console.error('Role mismatch:', {
+          expected: expectedRole,
+          received: userData.role
+        });
         throw new Error(`Invalid credentials for ${expectedRole} login`);
       }
 
