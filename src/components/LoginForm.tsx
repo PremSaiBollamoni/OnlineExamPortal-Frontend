@@ -60,7 +60,7 @@ const LoginForm = ({ userType }: LoginFormProps) => {
 
     try {
       // Use the auth context's login function instead of making a direct API call
-      await login(credentials.email, credentials.password);
+      const { user } = await login(credentials.email, credentials.password);
 
       toast({
         title: "Login Successful",
