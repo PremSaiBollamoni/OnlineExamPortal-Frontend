@@ -89,19 +89,44 @@ export const login = async (email: string, password: string) => {
   });
 
   const response = await api.post('/api/auth/login', { email, password });
-  console.log('Login response:', response);
+  console.log('Login response data structure:', {
+    fullResponse: response,
+    dataOnly: response.data,
+    hasUser: response.data?.user ? 'yes' : 'no',
+    hasToken: response.data?.token ? 'yes' : 'no',
+    dataKeys: Object.keys(response.data || {}),
+    userObject: response.data?.user,
+    tokenValue: response.data?.token
+  });
 
-  if (!response.data || !response.data.user || !response.data.token) {
-    console.error('Invalid login response structure:', response.data);
+  if (!response.data) {
+    console.error('No data in response');
+    throw new Error('Invalid login response - no data');
+  }
+
+  // Try to handle different response structures
+  let userData = response.data.user;
+  let token = response.data.token;
+
+  // If the data itself is the user object
+  if (response.data._id && response.data.email && !userData) {
+    userData = response.data;
+    token = response.data.token || response.headers?.authorization?.replace('Bearer ', '');
+  }
+
+  if (!userData || !token) {
+    console.error('Invalid login response structure:', {
+      responseData: response.data,
+      extractedUser: userData,
+      extractedToken: token
+    });
     throw new Error('Invalid login response structure');
   }
 
-  const { token, user } = response.data;
-  
   // Set token in axios defaults
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   
-  return { user, token };
+  return { user: userData, token };
 };
 
 // These are aliases that use the same endpoint but will be validated by role in the frontend
