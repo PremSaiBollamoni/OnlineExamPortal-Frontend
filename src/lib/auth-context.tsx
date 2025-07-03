@@ -126,38 +126,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Attempt login
       const response = await loginUser(email, password);
-      
-      console.log('=== Login Response Processing ===');
-      console.log('Response:', response);
+      console.log('Login response received:', response);
 
-      if (!response || !response.user || !response.token) {
-        console.error('Invalid login response:', response);
-        throw new Error('Invalid login response structure');
+      if (!response || typeof response !== 'object') {
+        console.error('Invalid response format:', response);
+        throw new Error('Invalid response format');
       }
 
       const { user: userData, token: newToken } = response;
 
-      // Validate user data
-      if (!userData || !userData._id || typeof userData.role !== 'string') {
+      if (!userData || typeof userData !== 'object') {
         console.error('Invalid user data:', userData);
-        throw new Error('Invalid user data structure');
+        throw new Error('Invalid user data');
       }
 
-      // Validate user role
-      console.log('Role validation:', {
-        expected: expectedRole,
-        received: userData.role
-      });
+      if (!userData._id || typeof userData.role !== 'string') {
+        console.error('Missing required user fields:', userData);
+        throw new Error('Missing required user fields');
+      }
 
+      console.log('User role:', userData.role);
+      console.log('Expected role:', expectedRole);
+
+      // Validate user role
       if (userData.role !== expectedRole) {
-        console.error('Role mismatch:', {
-          expected: expectedRole,
-          received: userData.role
-        });
+        console.error(`Role mismatch - got ${userData.role}, expected ${expectedRole}`);
         throw new Error(`Invalid credentials for ${expectedRole} login`);
       }
 
+      if (!newToken || typeof newToken !== 'string') {
+        console.error('Invalid token:', newToken);
+        throw new Error('Invalid token');
+      }
+
       // Store user data and token
+      console.log('Storing user data and token...');
       setUser(userData);
       setToken(newToken);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -168,22 +171,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       
       console.log('=== Login Success ===');
-      console.log('User:', userData);
+      console.log('User role:', userData.role);
       console.log('Token stored:', !!newToken);
 
       return { user: userData, token: newToken };
     } catch (error: any) {
       console.error('=== Login Error ===');
-      console.error('Error:', error);
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      
       if (error.response) {
         console.error('Response status:', error.response.status);
         console.error('Response data:', error.response.data);
-        console.error('Response headers:', error.response.headers);
-      } else if (error.request) {
-        console.error('Request made but no response received');
-        console.error('Request:', error.request);
-      } else {
-        console.error('Error details:', error.message);
       }
       
       // Clear any partial data on error
@@ -192,6 +191,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setToken(null);
       delete axios.defaults.headers.common['Authorization'];
+      
+      // Rethrow with more context if needed
+      if (error.message.includes('role')) {
+        throw new Error('Invalid role for this login page. Please use the correct login page for your role.');
+      }
       throw error;
     }
   };
